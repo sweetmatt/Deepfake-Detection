@@ -16,15 +16,17 @@ The following access request forms were completed to use the datasets for the pr
 - FakeAVCeleb: https://docs.google.com/forms/d/e/1FAIpQLSfPDd3oV0auqmmWEgCSaTEQ6CGpFeB-ozQJ35x-B_0Xjd93bw/viewform
 
 # Usage
-To test FACTOR using our scripts, first download a dataset containing real videos of individuals alongside deepfake videos generate from them. 
+To test FACTOR using our scripts, first download a dataset containing real videos of individuals alongside deepfake videos generated from them. 
 - First, you need to group the dataset by celebrity/actor/person identifier (groupByCeleb.py)
 - Second, you need to extract frames and detect/align the faces within said frames (extractDetectFrames.py)
 - Third, you need to extract features from the generated frames (extractFeature.py)
 - Fourth, you need to organize the generated features into test directories (moveFeatures.py)
-- Fifth, you need to generate a reference, test, and label npy file for each celebrity (generateRefTestLabel.py)
+- Fifth, you need to generate a reference, test, and label .npy files for each celebrity (generateRefTestLabel.py)
 - Lastly, you can evaluate FACTOR's accuracy on the entire dataset (evalFACTOR.py)
 
 UI Development: For this project, we developed our UI using the Gradio Python Framework: https://www.gradio.app/guides/quickstart.
+
+Link to Testing UI: (To Be Added)
 # Citations
 We utilized this resource along with the GitHub repo created by Tal Reiss and their team. 
 - Article: https://arxiv.org/abs/2311.01458 
