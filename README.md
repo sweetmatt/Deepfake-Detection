@@ -15,6 +15,11 @@ The following access request forms were completed to use the datasets for the pr
 - CelebDF-v2: https://docs.google.com/forms/d/e/1FAIpQLScoXint8ndZXyJi2Rcy4MvDHkkZLyBFKN43lTeyiG88wrG0rA/viewform
 - FakeAVCeleb: https://docs.google.com/forms/d/e/1FAIpQLSfPDd3oV0auqmmWEgCSaTEQ6CGpFeB-ozQJ35x-B_0Xjd93bw/viewform
 
+For more information about the datasets used for testing, please visit the following links:
+- FaceForensics++: https://github.com/ondyari/FaceForensics?tab=readme-ov-file
+- CelebDF-v2: https://github.com/yuezunli/celeb-deepfakeforensics
+- FakeAVCeleb: https://github.com/DASH-Lab/FakeAVCeleb
+
 # Usage
 To test FACTOR using our scripts, first download a dataset containing real videos of individuals alongside deepfake videos generated from them. 
 - First, you need to group the dataset by celebrity/actor/person identifier (groupByCeleb.py)
