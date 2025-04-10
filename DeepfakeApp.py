@@ -13,8 +13,16 @@ TEST_VIDEOS_DIR = os.path.join(BASE_DIR, "test_videos")
 FRAMES_DIR = os.path.join(BASE_DIR, "frames")
 
 # Create directories if they do not exist
+if os.path.exists(REAL_VIDEOS_DIR):
+        shutil.rmtree(REAL_VIDEOS_DIR)  # Remove the directory and its contents
 os.makedirs(REAL_VIDEOS_DIR, exist_ok=True)
+
+if os.path.exists(TEST_VIDEOS_DIR):
+        shutil.rmtree(TEST_VIDEOS_DIR)  # Remove the directory and its contents
 os.makedirs(TEST_VIDEOS_DIR, exist_ok=True)
+
+if os.path.exists(FRAMES_DIR):
+        shutil.rmtree(FRAMES_DIR)  # Remove the directory and its contents
 os.makedirs(FRAMES_DIR, exist_ok=True)
 
 # Paths to external scripts
@@ -154,37 +162,110 @@ def compare_features(reference_feature_file, test_feature_files):
     print(avg_dist)
     
     # Thresholding based on distance
-    threshold = 50
+    threshold = 33
     prediction = "FAKE" if avg_dist > threshold else "REAL"
 
-    return f"Deepfake analysis completed. Prediction:\n{prediction}"
+    return f"Deepfake analysis completed. Prediction:\n{prediction}\nScore: {avg_dist}"
 
-def process_videos(real_video_list, fake_video_list):
+def process_media(media_type, real_files, test_files):
+    
+    if os.path.exists(REAL_VIDEOS_DIR):
+        shutil.rmtree(REAL_VIDEOS_DIR)  # Remove the directory and its contents
+    os.makedirs(REAL_VIDEOS_DIR, exist_ok=True)
+
+    if os.path.exists(TEST_VIDEOS_DIR):
+        shutil.rmtree(TEST_VIDEOS_DIR)  # Remove the directory and its contents
+    os.makedirs(TEST_VIDEOS_DIR, exist_ok=True)
+
+    if os.path.exists(FRAMES_DIR):
+        shutil.rmtree(FRAMES_DIR)  # Remove the directory and its contents
+    os.makedirs(FRAMES_DIR, exist_ok=True)
+    
+    """Handles both videos and images based on user selection."""
+    if media_type == "Videos":
+        frame_dirs_real = extract_frames_for_all_videos(real_files, "Real Videos")
+        frame_dirs_fake = extract_frames_for_all_videos(test_files, "Test Videos")
+
+        real_features = extract_features_for_each_video(frame_dirs_real)
+        test_features = extract_features_for_each_video(frame_dirs_fake)
+        
+        reference_feature_file = generate_reference_feature(real_features)
+        return compare_features(reference_feature_file, test_features)
+    
+    else:  # Images
+        real_features = process_images(real_files, "Real")
+        test_features = process_images(test_files, "Test")
+
+        return compare_features(real_features, [test_features])
+
+def process_images(image_list, category):
     """
-    Handles video uploads, extracts features, generates reference, and compares test videos.
+    Stores images, aligns faces, extracts features, and returns feature files.
     """
-    # Step 1: Extract frames for all uploaded videos
-    frame_dirs_real = extract_frames_for_all_videos(real_video_list, "Real Videos")
-    frame_dirs_fake = extract_frames_for_all_videos(fake_video_list, "Test Videos")
+    if not image_list:
+        return []
 
-    # Step 3: Extract features for each video
-    real_features = extract_features_for_each_video(frame_dirs_real)
-    fake_features = extract_features_for_each_video(frame_dirs_fake)
+    image_subdir = "real" if category == "Real" else "fake"
+    image_base_dir = os.path.join(FRAMES_DIR, image_subdir)
+    os.makedirs(image_base_dir, exist_ok=True)
 
-    # Step 4: Generate reference features and compare test features
-    reference_feature_file = generate_reference_feature(real_features)
-    return compare_features(reference_feature_file, fake_features)
+    image_dir = os.path.join(image_base_dir, "batch")
+    os.makedirs(image_dir, exist_ok=True)
+
+    for image_path in image_list:
+        shutil.move(image_path, os.path.join(image_dir, Path(image_path).name))
+        
+    os.chdir("/users/PMIU0184/sweetmatt/FACTOR/FaceX-Zoo/face_sdk")
+
+    align_command = ["python", DETECT_ALIGN_SCRIPT, "--input_root", image_dir, "--out_root", image_dir]
+    print("Running command:", " ".join(align_command))
+
+    try:
+        subprocess.run(align_command, check=True, text=True)
+        print(f"Alignment completed for directory: {image_dir}")
+    except subprocess.CalledProcessError as e:
+        print(f"Error running detect_and_align.py: {e}")
+        
+    os.chdir("/users/PMIU0184/sweetmatt/FACTOR/FaceX-Zoo/test_protocol")
+    
+    print("Current working directory:", os.getcwd())
+
+    # Extract features (reference.npy will be generated inside `aligned_frame_dir`)
+    extract_features_command = [
+        "python", EXTRACT_FEATURES_SCRIPT,
+        "--input_root", image_dir  # Directory containing aligned frames
+    ]
+    print(f"Executing Feature Extraction for {image_dir}:", " ".join(extract_features_command))
+    try:
+        subprocess.run(extract_features_command, check=True, capture_output=True, text=True)
+    except subprocess.CalledProcessError as e:
+        print(f"Error extracting features: {e}")
+        print(f"Stderr: {e.stderr}")
+        print(f"Stdout: {e.stdout}")
+    except FileNotFoundError:
+        print(f"Error: {EXTRACT_FEATURES_SCRIPT} not found.")
+    
+    feature_path = os.path.join(image_dir, "features.npy")  # Join path components
+    
+    print(feature_path)
+
+    if os.path.exists(feature_path):
+        return feature_path
+    else:
+        print("No features generated.")
+        return None
 
 # Gradio Interface
 iface = gr.Interface(
-    fn=process_videos,
+    fn=process_media,
     inputs=[
-        gr.Files(file_types=[".mp4", ".avi", ".mov"], type="filepath", label="Upload Real Videos", interactive=True),
-        gr.Files(file_types=[".mp4", ".avi", ".mov"], type="filepath", label="Upload Test Videos", interactive=True),
+        gr.Radio(choices=["Videos", "Images"], label="Select Media Type"),
+        gr.Files(file_types=[".mp4", ".jpg", ".jpeg"], type="filepath", label="Upload Real Media"),
+        gr.Files(file_types=[".mp4", ".jpg", ".jpeg"], type="filepath", label="Upload Test Media"),
     ],
     outputs="text",
     title="Deepfake Detection Tool",
-    description="Upload real and test videos. A reference set is created from real videos, and test videos are analyzed against it.",
+    description="Select media type (videos or images) and upload real/test media. The system will analyze them for deepfake detection.",
 )
 
 # Launch the Gradio app
