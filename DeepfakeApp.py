@@ -93,8 +93,6 @@ def extract_frames_for_all_videos(video_list, category):
 
     return frame_dirs
 
-
-
 def extract_features_for_each_video(frame_dirs):
     """
     Extracts features for each video individually after alignment.
@@ -139,7 +137,7 @@ def generate_reference_feature(real_feature_files):
     np.save(reference_path, combined_embedding)
     return reference_path
 
-def compare_features(reference_feature_file, test_feature_files):
+def compare_image_features(reference_feature_file, test_feature_files):
     """
     Compares test video features against the reference feature set using FAISS.
     """
@@ -165,7 +163,35 @@ def compare_features(reference_feature_file, test_feature_files):
     threshold = 33
     prediction = "FAKE" if avg_dist > threshold else "REAL"
 
-    return f"Deepfake analysis completed. Prediction:\n{prediction}\nScore: {avg_dist}"
+    return f"Deepfake analysis completed. Prediction:\n{prediction}"
+
+def compare_vid_features(reference_feature_file, test_feature_files):
+    """
+    Compares test video features against the reference feature set using FAISS.
+    """
+    if not reference_feature_file or not test_feature_files:
+        return "Error: Missing reference or test features."
+
+    reference_features = np.load(reference_feature_file).astype(np.float32)
+    test_features = np.vstack([np.load(f).astype(np.float32) for f in test_feature_files])
+
+    # FAISS Index for similarity search
+    index = faiss.IndexFlatL2(reference_features.shape[1])
+    index.add(reference_features)
+
+    k_value = 1
+    D, _ = index.search(test_features, k_value)
+    distances = np.sum(D, axis=1)
+
+    avg_dist = np.mean(distances)
+    
+    print(avg_dist)
+    
+    # Thresholding based on distance
+    threshold = 41
+    prediction = "FAKE" if avg_dist > threshold else "REAL"
+
+    return f"Deepfake analysis completed. Prediction:\n{prediction}"
 
 def process_media(media_type, real_files, test_files):
     
@@ -190,13 +216,13 @@ def process_media(media_type, real_files, test_files):
         test_features = extract_features_for_each_video(frame_dirs_fake)
         
         reference_feature_file = generate_reference_feature(real_features)
-        return compare_features(reference_feature_file, test_features)
+        return compare_vid_features(reference_feature_file, test_features)
     
     else:  # Images
         real_features = process_images(real_files, "Real")
         test_features = process_images(test_files, "Test")
 
-        return compare_features(real_features, [test_features])
+        return compare_image_features(real_features, [test_features])
 
 def process_images(image_list, category):
     """
@@ -265,7 +291,7 @@ iface = gr.Interface(
     ],
     outputs="text",
     title="Deepfake Detection Tool",
-    description="Select media type (videos or images) and upload real/test media. The system will analyze them for deepfake detection.",
+    description="Select media type (videos or images) and upload real/test media. The system will analyze them for deepfake detection.", allow_flagging="never"
 )
 
 # Launch the Gradio app
