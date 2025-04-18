@@ -291,7 +291,7 @@ iface = gr.Interface(
     ],
     outputs="text",
     title="Deepfake Detection Tool",
-    description="Select media type (videos or images) and upload real/test media. The system will analyze them for deepfake detection.", allow_flagging="never"
+    description="Select media type (videos or images) and upload real/test media. The system will analyze them for deepfake detection. Source: 'Detecting Deepfakes Without Seeing Any' by Reiss, Tal and Cavia, Bar and Hoshen, and Yedid", allow_flagging="never"
 )
 
 # Launch the Gradio app
