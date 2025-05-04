@@ -256,10 +256,10 @@ def process_images(image_list, category):
     
     print("Current working directory:", os.getcwd())
 
-    # Extract features (reference.npy will be generated inside `aligned_frame_dir`)
+    # Extract features 
     extract_features_command = [
         "python", EXTRACT_FEATURES_SCRIPT,
-        "--input_root", image_dir  # Directory containing aligned frames
+        "--input_root", image_dir 
     ]
     print(f"Executing Feature Extraction for {image_dir}:", " ".join(extract_features_command))
     try:
